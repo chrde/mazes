@@ -1,0 +1,9 @@
+[package]
+name = "mazes"
+version = "0.1.0"
+authors = ["Christian de la Hoz <delahoz.chrde@gmail.com>"]
+
+[dependencies]
+custom_derive = "0.1.7"
+enum_derive = "0.1.7"
+rand = "0.5"
