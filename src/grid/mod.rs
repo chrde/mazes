@@ -41,17 +41,16 @@ impl fmt::Display for Grid {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s = String::new();
         assert_eq!(self.columns as usize * self.rows as usize, self.cells.len());
-        let mut cells = self.cells().iter();
         s.push_str("+");
         for _ in 0..self.columns {
             s.push_str("---+");
         }
-        for _ in 0..self.rows {
+        for r in (0..self.rows as usize).rev() {
             let mut top = "\n|".to_string();
             let mut bottom = "\n+".to_string();
-            for _ in 0..self.columns {
+            for c in 0..self.columns as usize {
                 top.push_str("   ");
-                let cell = cells.next().unwrap();
+                let cell = self.cells.get(r * self.columns as usize + c).unwrap();
                 if self.is_linked(cell, Direction::EAST) {
                     top.push_str(" ");
                 } else {
@@ -120,8 +119,8 @@ impl Grid {
         let new_pos = match direction {
             Direction::EAST => Position { column: position.column + 1, ..position },
             Direction::WEST => Position { column: position.column - 1, ..position },
-            Direction::NORTH => Position { row: position.row - 1, ..position },
-            Direction::SOUTH => Position { row: position.row + 1, ..position },
+            Direction::NORTH => Position { row: position.row + 1, ..position },
+            Direction::SOUTH => Position { row: position.row - 1, ..position },
         };
         if self.is_valid(new_pos) {
             Some(new_pos)
