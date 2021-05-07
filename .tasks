@@ -1,0 +1,12 @@
+[test]
+command=cargo test
+output=terminal
+
+[check]
+command=cargo check --all-features
+output=quickfix
+
+[bless]
+command=fd -e new --no-ignore-vcs --full-path --exec mv {} {.}
+output=terminal
+
