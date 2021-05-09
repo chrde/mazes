@@ -390,7 +390,6 @@ version = "0.1.0"
 dependencies = [
  "egui",
  "egui-macroquad",
- "generator",
  "gl",
  "libloading 0.7.0",
  "macroquad",

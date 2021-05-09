@@ -13,5 +13,3 @@ gl = "0.14.0"
 libloading = "0.7.0"
 macroquad = "0.3.0"
 rand = "0.8.3"
-
-generator = { path = "../generator" }
