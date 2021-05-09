@@ -9,6 +9,7 @@ mod render;
 mod sidewinder;
 
 use common::Maze;
+use egui::CtxRef;
 use render::render_cell;
 
 use crate::host_api::*;
@@ -26,6 +27,7 @@ pub extern "C" fn init(host_api: &mut dyn HostApi) -> *mut GameState {
     let distances = dijkstra::flood(0, &maze);
     let path = dijkstra::longest_path(&maze);
     let game = GameState {
+        debug: Default::default(),
         maze_width,
         maze_height,
         maze,
@@ -52,7 +54,40 @@ pub extern "C" fn restart(state: &mut GameState, host_api: &mut dyn HostApi) {
 }
 
 #[no_mangle]
+pub extern "C" fn dbg_update(
+    state: &mut GameState,
+    _host_api: &mut dyn HostApi,
+    egui_ctx: &CtxRef,
+) -> bool {
+    egui::Window::new("egui ❤ macroquad").show(egui_ctx, |ui| {
+        ui.horizontal(|ui| {
+            ui.radio_value(&mut state.generator, Generator::Sidewind, "Sidewind");
+            ui.radio_value(&mut state.generator, Generator::BinaryTree, "Binary tree");
+        });
+        if ui.small_button("restart").clicked() {
+            state.debug.reload_requested = true;
+        }
+    });
+    true
+}
+
+pub fn debug_reload_maze(state: &mut GameState, host_api: &mut dyn HostApi) {
+    if state.debug.reload_requested {
+        state.maze = match state.generator {
+            Generator::BinaryTree => {
+                binary_tree::generate(host_api.rng(), state.maze_width, state.maze_height)
+            }
+            Generator::Sidewind => {
+                sidewinder::generate(host_api.rng(), state.maze_width, state.maze_height)
+            }
+        };
+        state.debug.reload_requested = false;
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi) -> bool {
+    debug_reload_maze(state, host_api);
     let needs_update = true;
     let maze = &mut state.maze;
     let maze_width = state.maze_width;
@@ -77,20 +112,18 @@ pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi) -> b
                 //     host_api.render_group().push(command);
                 // }
                 let command = RenderCommand::FillRectangle {
-                    x: x * tile_width,
-                    y: y * tile_height,
-                    width: tile_width as u32,
-                    height: tile_height as u32,
+                    x: (x * tile_width) as f32,
+                    y: (y * tile_height) as f32,
+                    width: tile_width as f32,
+                    height: tile_height as f32,
                     color: Color::gradient_gray(state.distances[idx] as f64 / max_distance),
                 };
                 host_api.render_group().push(command);
 
                 let text = format!("d:{}", state.distances[idx]);
                 let command = RenderCommand::Text {
-                    x: border_height as i32 * 2 + x * tile_width,
-                    y: border_width as i32 * 2 + y * tile_height,
-                    width: host_api.font_w() * text.len() as u32,
-                    height: host_api.font_h(),
+                    x: (border_height as i32 * 2 + x * tile_width) as f32,
+                    y: (border_width as i32 * 2 + y * tile_height) as f32,
                     text,
                 };
                 host_api.render_group().push(command);
@@ -114,13 +147,20 @@ pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi) -> b
     needs_update
 }
 
+#[derive(Eq, PartialEq)]
 enum Generator {
     BinaryTree,
     Sidewind,
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct Debug {
+    reload_requested: bool,
+}
+
 #[repr(C)]
 pub struct GameState {
+    debug: Debug,
     maze_width: usize,
     maze_height: usize,
     maze: Maze,

@@ -7,8 +7,8 @@ pub trait HostApi {
     }
     fn render_group(&mut self) -> &mut RenderGroup;
     fn rng(&mut self) -> &mut ThreadRng;
-    fn font_w(&self) -> u32;
-    fn font_h(&self) -> u32;
+    fn font_w(&self) -> f32;
+    fn font_h(&self) -> f32;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -33,24 +33,22 @@ impl RenderGroup {
 #[derive(Clone, Debug)]
 pub enum RenderCommand {
     FillRectangle {
-        x: i32,
-        y: i32,
-        width: u32,
-        height: u32,
+        x: f32,
+        y: f32,
+        width: f32,
+        height: f32,
         color: Color,
     },
     DrawRectangle {
-        x: i32,
-        y: i32,
-        width: u32,
-        height: u32,
+        x: f32,
+        y: f32,
+        width: f32,
+        height: f32,
         color: Color,
     },
     Text {
-        x: i32,
-        y: i32,
-        width: u32,
-        height: u32,
+        x: f32,
+        y: f32,
         text: String,
     },
 }

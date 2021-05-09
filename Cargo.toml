@@ -8,11 +8,12 @@ edition = "2018"
 members = [ "generator", "reloader", "engine" ]
 
 [dependencies]
+egui = "0.11.0"
+egui-macroquad = "0.3.0"
 gl = "0.14.0"
+macroquad = "0.3.0"
 rand = "0.8.3"
-sdl2 = { version = "0.34.4", features = ["ttf"] }
 
-generator = { path = "./generator" }
 reloader = { path = "./reloader" }
 engine = { path = "./engine" }
 

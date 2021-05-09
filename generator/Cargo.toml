@@ -8,5 +8,5 @@ edition = "2018"
 crate-type = ["cdylib"]
 
 [dependencies]
-egui = "0.10.0"
+egui = "0.11.0"
 rand = "0.8.3"

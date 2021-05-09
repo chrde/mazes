@@ -16,40 +16,40 @@ pub fn render_cell(render_group: &mut RenderGroup, x: i32, y: i32, maze: &Maze) 
     let links = maze.cells()[idx].links();
     if !links.north {
         let command = RenderCommand::FillRectangle {
-            x: x * tile_width,
-            y: y * tile_height,
-            width: tile_width as u32,
-            height: border_height,
+            x: (x * tile_width) as f32,
+            y: (y * tile_height) as f32,
+            width: tile_width as f32,
+            height: border_height as f32,
             color: YELLOW,
         };
         render_group.push(command);
     }
     if !links.south {
         let command = RenderCommand::FillRectangle {
-            x: x * tile_width,
-            y: (y + 1) * tile_height - border_height as i32,
-            width: tile_width as u32,
-            height: border_height,
+            x: (x * tile_width) as f32,
+            y: ((y + 1) * tile_height - border_height as i32) as f32,
+            width: tile_width as f32,
+            height: border_height as f32,
             color: YELLOW,
         };
         render_group.push(command);
     }
     if !links.east {
         let command = RenderCommand::FillRectangle {
-            x: (x + 1) * tile_width - border_width as i32,
-            y: y * tile_height,
-            width: border_width,
-            height: tile_height as u32,
+            x: ((x + 1) * tile_width - border_width as i32) as f32,
+            y: (y * tile_height) as f32,
+            width: border_width as f32,
+            height: tile_height as f32,
             color: YELLOW,
         };
         render_group.push(command);
     }
     if !links.west {
         let command = RenderCommand::FillRectangle {
-            x: x * tile_width,
-            y: y * tile_height,
-            width: border_width,
-            height: tile_height as u32,
+            x: (x * tile_width) as f32,
+            y: (y * tile_height) as f32,
+            width: border_width as f32,
+            height: tile_height as f32,
             color: YELLOW,
         };
         render_group.push(command);

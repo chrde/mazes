@@ -6,12 +6,12 @@ use crate::host_api::*;
 pub struct GameHostApi {
     game_render_group: RenderGroup,
     rng: ThreadRng,
-    font_w: u32,
-    font_h: u32,
+    font_w: f32,
+    font_h: f32,
 }
 
 impl GameHostApi {
-    pub fn new(font_w: u32, font_h: u32) -> Self { Self { game_render_group: Default::default(), rng: rand::thread_rng(), font_w, font_h, } }
+    pub fn new(font_w: f32, font_h: f32) -> Self { Self { game_render_group: Default::default(), rng: rand::thread_rng(), font_w, font_h, } }
 }
 
 impl HostApi for GameHostApi {
@@ -23,11 +23,11 @@ impl HostApi for GameHostApi {
         &mut self.rng
     }
 
-    fn font_w(&self) -> u32 {
+    fn font_w(&self) -> f32 {
         self.font_w
     }
 
-    fn font_h(&self) -> u32 {
+    fn font_h(&self) -> f32 {
         self.font_h
     }
 }
