@@ -1,5 +1,5 @@
 use crate::game_host_api::GameHostApi;
-use crate::host_api::{HostApi, RenderCommand};
+use crate::host_api::{HostApi, RenderCommand, Input};
 use crate::plugin::Plugin;
 use macroquad::prelude::*;
 use std::sync::mpsc::Receiver;
@@ -32,17 +32,20 @@ pub async fn run(reloader: Receiver<()>) -> Result<(), String> {
         }
         clear_background(BLACK);
 
-        if is_key_pressed(KeyCode::Enter) {
-            println!("===== Restarting =====");
-            (game_api.restart)(state, &mut host_api);
-        } else if is_key_pressed(KeyCode::Escape) {
+        if is_key_pressed(KeyCode::Escape) {
             return Ok(());
         }
+
+        let (_, wheel_y) = mouse_wheel();
+        let input = Input {
+            mouse_wheel_up: wheel_y > 0.0,
+            mouse_wheel_down: wheel_y < 0.0,
+        };
 
         egui_macroquad::ui(|egui_ctx| {
             (game_api.dbg_update)(state, &mut host_api, egui_ctx);
         });
-        (game_api.update)(state, &mut host_api);
+        (game_api.update)(state, &mut host_api, &input);
 
         for render_command in host_api.render_group().drain() {
             match render_command {
@@ -75,9 +78,18 @@ pub async fn run(reloader: Receiver<()>) -> Result<(), String> {
                     };
                     draw_text_ex(&text, x, y, params);
                 }
+                RenderCommand::Zoom { y } => {
+                    println!("hallo {}", y);
+                    set_camera(&Camera2D {
+                        zoom: vec2(y, y * screen_width() / screen_height()),
+                        target: vec2(0.5, 0.5),
+                        ..Default::default()
+                    });
+                }
             }
         }
 
+        // set_default_camera();
         egui_macroquad::draw();
         next_frame().await;
     }

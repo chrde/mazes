@@ -1,4 +1,4 @@
-use crate::host_api::HostApi;
+use crate::host_api::*;
 use egui::CtxRef;
 use libloading as lib;
 
@@ -25,12 +25,10 @@ impl Plugin {
             let init = self.libs[0].get(b"init")?;
             let update = self.libs[0].get(b"update")?;
             let dbg_update = self.libs[0].get(b"dbg_update")?;
-            let restart = self.libs[0].get(b"restart")?;
             Ok(PluginApi {
                 init,
                 update,
                 dbg_update,
-                restart,
             })
         }
     }
@@ -43,7 +41,6 @@ pub struct GameState {
 
 pub struct PluginApi<'lib> {
     pub init: lib::Symbol<'lib, fn(*mut dyn HostApi) -> *mut GameState>,
-    pub restart: lib::Symbol<'lib, fn(*mut GameState, &mut dyn HostApi)>,
-    pub update: lib::Symbol<'lib, fn(*mut GameState, &mut dyn HostApi) -> bool>,
+    pub update: lib::Symbol<'lib, fn(*mut GameState, &mut dyn HostApi, &Input) -> bool>,
     pub dbg_update: lib::Symbol<'lib, fn(*mut GameState, &mut dyn HostApi, &CtxRef) -> bool>,
 }

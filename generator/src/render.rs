@@ -1,55 +1,86 @@
 use crate::host_api::*;
 use crate::Maze;
 
+pub const RED: Color = Color {
+    r: 179,
+    g: 45,
+    b: 0,
+};
+
 pub const YELLOW: Color = Color {
     r: 255,
     g: 255,
     b: 0,
 };
 
-pub fn render_cell(render_group: &mut RenderGroup, x: i32, y: i32, maze: &Maze) {
-    let tile_width = 100;
-    let tile_height = 100;
-    let border_height = 3;
-    let border_width = 3;
-    let idx = y as usize * maze.width() + x as usize;
+pub fn render_cell(render_group: &mut RenderGroup, x: usize, y: usize, color: Color) {
+    let command = RenderCommand::FillRectangle {
+        x: x as f32 * TILE_WIDTH,
+        y: y as f32 * TILE_HEIGHT,
+        width: TILE_WIDTH,
+        height: TILE_HEIGHT,
+        color,
+    };
+    render_group.push(command);
+}
+
+const TILE_WIDTH: f32 = 0.1;
+const TILE_HEIGHT: f32 = 0.1;
+const BORDER_WIDTH: f32 = 0.003;
+const BORDER_HEIGHT: f32 = 0.003;
+
+// x and y start from table borders
+pub fn render_cell_text(render_group: &mut RenderGroup, x: f32, y: f32, text: String) {
+    let command = RenderCommand::Text {
+        x: x * BORDER_WIDTH,
+        y: y * BORDER_HEIGHT,
+        text,
+    };
+    render_group.push(command);
+}
+
+
+pub fn render_borders(render_group: &mut RenderGroup, x: usize, y: usize, maze: &Maze) {
+    let idx = y * maze.width() + x;
     let links = maze.cells()[idx].links();
+    let cell_x = x as f32 * TILE_WIDTH;
+    let cell_y = y as f32 * TILE_HEIGHT;
     if !links.north {
         let command = RenderCommand::FillRectangle {
-            x: (x * tile_width) as f32,
-            y: (y * tile_height) as f32,
-            width: tile_width as f32,
-            height: border_height as f32,
+            x: cell_x,
+            y: cell_y,
+            width: TILE_WIDTH,
+            height: BORDER_HEIGHT,
             color: YELLOW,
         };
         render_group.push(command);
     }
     if !links.south {
         let command = RenderCommand::FillRectangle {
-            x: (x * tile_width) as f32,
-            y: ((y + 1) * tile_height - border_height as i32) as f32,
-            width: tile_width as f32,
-            height: border_height as f32,
+            x: cell_x,
+            y: cell_y + TILE_HEIGHT - BORDER_HEIGHT,
+            width: TILE_WIDTH,
+            height: BORDER_HEIGHT,
             color: YELLOW,
         };
         render_group.push(command);
     }
     if !links.east {
         let command = RenderCommand::FillRectangle {
-            x: ((x + 1) * tile_width - border_width as i32) as f32,
-            y: (y * tile_height) as f32,
-            width: border_width as f32,
-            height: tile_height as f32,
+            x: cell_x + TILE_WIDTH - BORDER_WIDTH,
+            y: cell_y,
+            width: BORDER_WIDTH,
+            height: TILE_HEIGHT,
             color: YELLOW,
         };
         render_group.push(command);
     }
     if !links.west {
         let command = RenderCommand::FillRectangle {
-            x: (x * tile_width) as f32,
-            y: (y * tile_height) as f32,
-            width: border_width as f32,
-            height: tile_height as f32,
+            x: cell_x,
+            y: cell_y,
+            width: BORDER_WIDTH,
+            height: TILE_HEIGHT,
             color: YELLOW,
         };
         render_group.push(command);

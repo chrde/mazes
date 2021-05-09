@@ -49,6 +49,13 @@ pub enum RenderCommand {
         y: f32,
         text: String,
     },
+    Zoom { y: f32 },
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Input {
+    pub mouse_wheel_up: bool,
+    pub mouse_wheel_down: bool,
 }
 
 #[derive(Copy, Clone, Debug)]

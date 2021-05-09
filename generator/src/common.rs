@@ -70,6 +70,12 @@ impl Maze {
             }
         }
     }
+    pub fn unlink(&mut self, cell: usize, n: Neighbor) {
+        let neighbor = self.neighbor_at(cell, n).unwrap();
+        self.cells[cell].unlink(n);
+        self.cells[neighbor.idx].unlink(n.opposite());
+    }
+
 
     pub fn link(&mut self, cell: usize, n: Neighbor) {
         let neighbor = self.neighbor_at(cell, n).unwrap();
@@ -88,16 +94,16 @@ impl Maze {
             .collect()
     }
 
-    // pub fn neighbors(&self, cell: usize) -> Neighbors {
-    //     Neighbors {
-    //         inner: [
-    //             self.neighbor_at(cell, Neighbor::North),
-    //             self.neighbor_at(cell, Neighbor::South),
-    //             self.neighbor_at(cell, Neighbor::East),
-    //             self.neighbor_at(cell, Neighbor::West),
-    //         ],
-    //     }
-    // }
+    pub fn neighbors(&self, cell: usize) -> Neighbors {
+        Neighbors {
+            inner: [
+                self.neighbor_at(cell, Neighbor::North),
+                self.neighbor_at(cell, Neighbor::South),
+                self.neighbor_at(cell, Neighbor::East),
+                self.neighbor_at(cell, Neighbor::West),
+            ],
+        }
+    }
 
     pub fn width(&self) -> usize {
         self.width
@@ -148,6 +154,15 @@ impl Cell {
         self.links
     }
 
+    pub fn unlink(&mut self, dir: Neighbor) {
+        match dir {
+            Neighbor::North => self.links.north = false,
+            Neighbor::South => self.links.south = false,
+            Neighbor::East => self.links.east = false,
+            Neighbor::West => self.links.west = false,
+        }
+    }
+
     pub fn link(&mut self, dir: Neighbor) {
         match dir {
             Neighbor::North => self.links.north = true,
@@ -169,7 +184,7 @@ impl Cell {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Neighbors {
-    inner: [Option<usize>; 4],
+    inner: [Option<Neighbor1>; 4],
 }
 
 impl Neighbors {
