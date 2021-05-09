@@ -1,12 +1,10 @@
 #![allow(dead_code)]
-use rand::prelude::ThreadRng;
 
 pub trait HostApi {
     fn hello(&self) -> &str {
         "hello world"
     }
     fn render_group(&mut self) -> &mut RenderGroup;
-    fn rng(&mut self) -> &mut ThreadRng;
     fn font_w(&self) -> f32;
     fn font_h(&self) -> f32;
 }

@@ -1,5 +1,5 @@
-use crate::common::*;
-use rand::prelude::ThreadRng;
+use crate::{common::*, Step};
+use rand::prelude::StdRng;
 use rand::Rng;
 
 pub fn generate(rng: &mut ThreadRng, width: usize, height: usize) -> Maze {
