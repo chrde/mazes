@@ -49,13 +49,22 @@ pub enum RenderCommand {
         y: f32,
         text: String,
     },
-    Zoom { y: f32 },
+    Camera {
+        offset_x: f32,
+        offset_y: f32,
+        zoom_y: f32,
+    },
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct Input {
+    pub elapsed: f64,
     pub mouse_wheel_up: bool,
     pub mouse_wheel_down: bool,
+    pub left: bool,
+    pub right: bool,
+    pub up: bool,
+    pub down: bool,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -69,7 +78,7 @@ impl Color {
     pub fn gradient_gray(perc: f64) -> Self {
         assert!(perc <= 1.1);
         assert!(perc >= 0.0);
-        let color = (255.0 * (1.0 - perc)) as u8;
+        let color = (255.0 * ((1.0 - perc).powf(2.2))) as u8;
         Self {
             r: color,
             g: color,

@@ -24,10 +24,10 @@ pub fn render_cell(render_group: &mut RenderGroup, x: usize, y: usize, color: Co
     render_group.push(command);
 }
 
-const TILE_WIDTH: f32 = 0.1;
-const TILE_HEIGHT: f32 = 0.1;
-const BORDER_WIDTH: f32 = 0.003;
-const BORDER_HEIGHT: f32 = 0.003;
+const TILE_WIDTH: f32 = 100.0;
+const TILE_HEIGHT: f32 = 100.0;
+const BORDER_WIDTH: f32 = 3.0;
+const BORDER_HEIGHT: f32 = 3.0;
 
 // x and y start from table borders
 pub fn render_cell_text(render_group: &mut RenderGroup, x: f32, y: f32, text: String) {

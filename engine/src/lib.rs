@@ -1,7 +1,8 @@
 use crate::game_host_api::GameHostApi;
-use crate::host_api::{HostApi, RenderCommand, Input};
+use crate::host_api::{HostApi, Input, RenderCommand};
 use crate::plugin::Plugin;
 use macroquad::prelude::*;
+use macroquad::time;
 use std::sync::mpsc::Receiver;
 
 mod game_host_api;
@@ -23,6 +24,7 @@ pub async fn run(reloader: Receiver<()>) -> Result<(), String> {
     let mut game_api = plugin.api().unwrap();
     let state = (game_api.init)(&mut host_api);
 
+    let last = time::get_time();
     loop {
         if reloader.try_recv().is_ok() {
             println!("===== Reloading =====");
@@ -35,11 +37,18 @@ pub async fn run(reloader: Receiver<()>) -> Result<(), String> {
         if is_key_pressed(KeyCode::Escape) {
             return Ok(());
         }
+        
+        // println!("{} - {}", time::get_fps(), time::get_time());
 
         let (_, wheel_y) = mouse_wheel();
         let input = Input {
+            elapsed: time::get_time() - last,
             mouse_wheel_up: wheel_y > 0.0,
             mouse_wheel_down: wheel_y < 0.0,
+            left: is_key_down(KeyCode::Left),
+            right: is_key_down(KeyCode::Right),
+            up: is_key_down(KeyCode::Up),
+            down: is_key_down(KeyCode::Down),
         };
 
         egui_macroquad::ui(|egui_ctx| {
@@ -78,18 +87,19 @@ pub async fn run(reloader: Receiver<()>) -> Result<(), String> {
                     };
                     draw_text_ex(&text, x, y, params);
                 }
-                RenderCommand::Zoom { y } => {
-                    println!("hallo {}", y);
-                    set_camera(&Camera2D {
-                        zoom: vec2(y, y * screen_width() / screen_height()),
-                        target: vec2(0.5, 0.5),
-                        ..Default::default()
-                    });
+                RenderCommand::Camera { zoom_y, offset_x, offset_y } => {
+                    // let aspect_ratio = screen_width() / screen_height();
+                    // let camera = Camera2D {
+                    //     zoom: vec2(zoom_y, zoom_y * aspect_ratio),
+                    //     target: vec2(offset_x, offset_y),
+                    //     ..Default::default()
+                    // };
+                    let camera = Camera2D::from_display_rect(Rect::new(offset_x, offset_y, 400.0 * zoom_y, 400.0 * zoom_y));
+                    set_camera(&camera);
                 }
             }
         }
 
-        // set_default_camera();
         egui_macroquad::draw();
         next_frame().await;
     }

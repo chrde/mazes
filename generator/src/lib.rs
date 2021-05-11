@@ -29,6 +29,7 @@ pub extern "C" fn init(_host_api: &mut dyn HostApi) -> *mut GameState {
         Generator::Sidewind => sidewinder::generate(&mut rng, maze_width, maze_height),
     };
     let debug = Debug {
+        debug_autoplay: false,
         reload_requested: false,
         debug_step: steps.len() - 1,
         debug_maze_width: maze_width,
@@ -36,10 +37,9 @@ pub extern "C" fn init(_host_api: &mut dyn HostApi) -> *mut GameState {
         debug_show_distances: false,
     };
     let generation = Generation::finished(steps);
-    let distances = dijkstra::flood(0, &maze);
+    let distances = dijkstra::flood(maze.middle_cell(), &maze);
     let path = dijkstra::longest_path(&maze);
     let game = GameState {
-        camera_zoom: 1.0,
         rng,
         generation,
         debug,
@@ -49,6 +49,9 @@ pub extern "C" fn init(_host_api: &mut dyn HostApi) -> *mut GameState {
         distances,
         path,
         generator,
+        camera_zoom: 2.5,
+        camera_x: 0.0,
+        camera_y: 0.0,
     };
     Box::into_raw(Box::new(game))
 }
@@ -103,6 +106,10 @@ impl Generation {
         }
         self.current_step += 1;
     }
+
+    pub fn len(&self) -> usize {
+        self.steps.len()
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -121,7 +128,6 @@ pub extern "C" fn dbg_update(
     egui_ctx: &CtxRef,
 ) -> bool {
     egui::Window::new("debug").show(egui_ctx, |ui| {
-        // ui.horizontal(|ui| {
         ui.horizontal(|ui| {
             ui.radio_value(&mut state.generator, Generator::Sidewind, "Sidewind");
             ui.radio_value(&mut state.generator, Generator::BinaryTree, "Binary tree");
@@ -129,18 +135,17 @@ pub extern "C" fn dbg_update(
         ui.horizontal(|ui| {
             ui.label("Width:");
             ui.add(
-                Slider::new(&mut state.debug.debug_maze_width, 0..=10)
+                Slider::new(&mut state.debug.debug_maze_width, 1..=90)
                     .clamp_to_range(true)
                     .integer(),
             );
             ui.label("Height: ");
             ui.add(
-                Slider::new(&mut state.debug.debug_maze_height, 0..=10)
+                Slider::new(&mut state.debug.debug_maze_height, 1..=90)
                     .clamp_to_range(true)
                     .integer(),
             );
         });
-        // });
         ui.horizontal(|ui| {
             ui.label("Steps:");
             let slider = Slider::new(
@@ -149,20 +154,31 @@ pub extern "C" fn dbg_update(
             )
             .clamp_to_range(true);
             ui.add(slider);
-            let first = Button::new("⏪").enabled(state.debug.debug_step != 0);
+            let first = Button::new("⏮").enabled(state.debug.debug_step != 0);
             if ui.add(first).clicked() {
                 state.debug.debug_step = 0;
             }
-            let prev = Button::new("⏴").enabled(state.debug.debug_step != 0);
+            let prev = Button::new("⏪").enabled(state.debug.debug_step != 0);
             if ui.add(prev).clicked() {
                 state.debug.debug_step -= 1;
             }
-            let next = Button::new("⏵")
+            if state.debug.debug_autoplay {
+                let pause = Button::new("⏸").enabled(state.debug.debug_autoplay);
+                if ui.add(pause).clicked() {
+                    state.debug.debug_autoplay = false;
+                }
+            } else {
+                let play = Button::new("⏵").enabled(!state.debug.debug_autoplay);
+                if ui.add(play).clicked() {
+                    state.debug.debug_autoplay = true;
+                }
+            }
+            let next = Button::new("⏩")
                 .enabled(state.debug.debug_step != state.generation.steps.len() - 1);
             if ui.add(next).clicked() {
                 state.debug.debug_step += 1;
             }
-            let last = Button::new("⏩")
+            let last = Button::new("⏭")
                 .enabled(state.debug.debug_step != state.generation.steps.len() - 1);
             if ui.add(last).clicked() {
                 state.debug.debug_step = state.generation.steps.len() - 1;
@@ -176,7 +192,7 @@ pub extern "C" fn dbg_update(
     true
 }
 
-pub fn debug_reload_maze(state: &mut GameState) {
+pub fn debug_reload_maze(state: &mut GameState, input: &Input) {
     if state.debug.reload_requested {
         state.maze_width = state.debug.debug_maze_width;
         state.maze_height = state.debug.debug_maze_height;
@@ -190,10 +206,17 @@ pub fn debug_reload_maze(state: &mut GameState) {
         };
         state.maze = maze;
         state.generation = Generation::finished(steps);
-        state.distances = dijkstra::flood(state.maze.len() / 2, &state.maze);
+        state.distances = dijkstra::flood(state.maze.middle_cell(), &state.maze);
         state.path = dijkstra::longest_path(&state.maze);
         state.debug.reload_requested = false;
-        state.debug.debug_step = cmp::min(state.debug.debug_step, state.generation.steps.len() - 1);
+        state.debug.debug_step = cmp::min(state.debug.debug_step, state.generation.len() - 1);
+    }
+    if state.debug.debug_autoplay {
+        // if input.elapsed % 0.1 <= 0.1 {
+        state.debug.debug_step = (state.debug.debug_step + 1) % (state.generation.len() - 1);
+        if state.debug.debug_step == 0 {
+            state.debug.debug_autoplay = false;
+        }
     }
     if state.debug.debug_step != state.generation.current_step {
         state
@@ -205,33 +228,36 @@ pub fn debug_reload_maze(state: &mut GameState) {
 
 #[no_mangle]
 pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi, input: &Input) -> bool {
-    debug_reload_maze(state);
-    let needs_update = true;
+    debug_reload_maze(state, input);
     let maze = &mut state.maze;
-    let max_distance = state.distances.iter().max().cloned().unwrap() as f64;
     if input.mouse_wheel_up {
-        state.camera_zoom *= 1.1;
-    }
-    if input.mouse_wheel_down {
         state.camera_zoom /= 1.1;
     }
-    host_api.render_group().push(RenderCommand::Zoom {
-        y: state.camera_zoom,
+    if input.mouse_wheel_down {
+        state.camera_zoom *= 1.1;
+    }
+    if input.left {
+        state.camera_x += 0.1;
+    }
+    if input.right {
+        state.camera_x -= 0.1;
+    }
+    if input.up {
+        state.camera_y -= 0.1;
+    }
+    if input.down {
+        state.camera_y += 0.1;
+    }
+    host_api.render_group().push(RenderCommand::Camera {
+        zoom_y: state.camera_zoom,
+        offset_x: state.camera_x,
+        offset_y: state.camera_y,
     });
+    let max_distance = state.distances.iter().max().cloned().unwrap() as f64;
     {
         for y in 0..state.maze_height {
             for x in 0..state.maze_width {
                 let idx = y * state.maze_width + x;
-                // if state.path.contains(&idx) {
-                //     let command = RenderCommand::FillRectangle {
-                //         x: x * tile_width,
-                //         y: y * tile_height,
-                //         width: tile_width as u32,
-                //         height: tile_height as u32,
-                //         color: GRAY,
-                //     };
-                //     host_api.render_group().push(command);
-                // }
                 if state.debug.debug_show_distances {
                     render_cell(
                         host_api.render_group(),
@@ -239,36 +265,18 @@ pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi, inpu
                         y,
                         Color::gradient_gray(state.distances[idx] as f64 / max_distance),
                     );
-                    let text = format!("d:{}", state.distances[idx]);
-                    render_cell_text(host_api.render_group(), 0.0, 0.0, text);
-                    // let command = RenderCommand::Text {
-                    //     x: (border_height as i32 * 2 + x * tile_width) as f32,
-                    //     y: (border_width as i32 * 2 + y * tile_height) as f32,
-                    //     text,
-                    // };
-                    // host_api.render_group().push(command);
+                    // let text = format!("d:{}", state.distances[idx]);
+                    // render_cell_text(host_api.render_group(), 0.0, 0.0, text);
                 }
 
                 if idx == (state.generation.current_step + 1) / 2 {
                     render_cell(host_api.render_group(), x, y, RED)
                 }
                 render_borders(host_api.render_group(), x, y, maze);
-
-                // if selected_cell.map_or(false, |x| x == idx) {
-                //     canvas.set_draw_color(Color::RGB(255, 0, 255));
-                //     canvas.draw_rect(rect).unwrap();
-                //     let surface = font
-                //         .render(&format!("{}", idx))
-                //         .solid(Color::RGB(255, 255, 255))
-                //         .unwrap();
-                //     let text = texture_creator
-                //         .create_texture_from_surface(surface)
-                //         .unwrap();
-                //     canvas.copy(&text, None, rect);
-                // }
             }
         }
     }
+    let needs_update = true;
     needs_update
 }
 
@@ -282,6 +290,7 @@ enum Generator {
 pub struct Debug {
     reload_requested: bool,
     debug_step: usize,
+    debug_autoplay: bool,
     debug_show_distances: bool,
     debug_maze_width: usize,
     debug_maze_height: usize,
@@ -299,4 +308,6 @@ pub struct GameState {
     generation: Generation,
     rng: StdRng,
     camera_zoom: f32,
+    camera_x: f32,
+    camera_y: f32,
 }
