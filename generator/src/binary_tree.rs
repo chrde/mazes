@@ -1,4 +1,4 @@
-use crate::{Step, common::*};
+use crate::{common::*, Step};
 use rand::prelude::StdRng;
 use rand::Rng;
 
@@ -14,7 +14,10 @@ pub fn generate(rng: &mut StdRng, width: usize, height: usize) -> (Maze, Vec<Ste
             .collect();
         if !n.is_empty() {
             let choice = n[rng.gen_range(0..n.len())];
-            steps.push(Step::Direction { old: last_direction, new: choice });
+            steps.push(Step::Direction {
+                old: last_direction,
+                new: choice,
+            });
             maze.link(cell, choice);
             steps.push(Step::Link(cell, choice));
             last_direction = Some(choice);

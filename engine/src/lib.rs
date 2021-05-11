@@ -37,7 +37,7 @@ pub async fn run(reloader: Receiver<()>) -> Result<(), String> {
         if is_key_pressed(KeyCode::Escape) {
             return Ok(());
         }
-        
+
         // println!("{} - {}", time::get_fps(), time::get_time());
 
         let (_, wheel_y) = mouse_wheel();
@@ -87,14 +87,23 @@ pub async fn run(reloader: Receiver<()>) -> Result<(), String> {
                     };
                     draw_text_ex(&text, x, y, params);
                 }
-                RenderCommand::Camera { zoom_y, offset_x, offset_y } => {
+                RenderCommand::Camera {
+                    zoom_y,
+                    offset_x,
+                    offset_y,
+                } => {
                     // let aspect_ratio = screen_width() / screen_height();
                     // let camera = Camera2D {
                     //     zoom: vec2(zoom_y, zoom_y * aspect_ratio),
                     //     target: vec2(offset_x, offset_y),
                     //     ..Default::default()
                     // };
-                    let camera = Camera2D::from_display_rect(Rect::new(offset_x, offset_y, 400.0 * zoom_y, 400.0 * zoom_y));
+                    let camera = Camera2D::from_display_rect(Rect::new(
+                        offset_x,
+                        offset_y,
+                        400.0 * zoom_y,
+                        400.0 * zoom_y,
+                    ));
                     set_camera(&camera);
                 }
             }

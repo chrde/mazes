@@ -10,7 +10,10 @@ pub struct Plugin {
 impl Plugin {
     pub fn new(lib_path: String) -> Result<Self, Box<dyn std::error::Error>> {
         let lib = unsafe { lib::Library::new(&lib_path)? };
-        Ok(Self { libs: vec![lib], lib_path })
+        Ok(Self {
+            libs: vec![lib],
+            lib_path,
+        })
     }
 
     pub fn reload(&mut self) -> Result<(), Box<dyn std::error::Error>> {

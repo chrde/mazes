@@ -80,7 +80,6 @@ impl Maze {
         self.cells[neighbor.idx].unlink(n.opposite());
     }
 
-
     pub fn link(&mut self, cell: usize, n: Neighbor) {
         let neighbor = self.neighbor_at(cell, n).unwrap();
         self.cells[cell].link(n);

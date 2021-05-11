@@ -5,7 +5,11 @@ const MAX_DISTANCE: usize = 9999;
 pub fn shortest_path(from: usize, to: usize, maze: &Maze, distances: &[usize]) -> Vec<usize> {
     let mut breadcrumbs = vec![to];
     let mut current = to;
-    while let Some(next) = maze.linked_neighbors(current).iter().min_by_key(|n| distances[n.idx]) {
+    while let Some(next) = maze
+        .linked_neighbors(current)
+        .iter()
+        .min_by_key(|n| distances[n.idx])
+    {
         current = next.idx;
         breadcrumbs.push(next.idx);
         if next.idx == from {
@@ -18,9 +22,17 @@ pub fn shortest_path(from: usize, to: usize, maze: &Maze, distances: &[usize]) -
 
 pub fn longest_path(maze: &Maze) -> Vec<usize> {
     let distances = flood(0, maze);
-    let (from, _) = distances.iter().enumerate().max_by_key(|(_, dis)| *dis).unwrap();
+    let (from, _) = distances
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, dis)| *dis)
+        .unwrap();
     let new_distances = flood(from, maze);
-    let (to, _) = new_distances.iter().enumerate().max_by_key(|(_, dis)| *dis).unwrap();
+    let (to, _) = new_distances
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, dis)| *dis)
+        .unwrap();
     shortest_path(from, to, maze, &new_distances)
 }
 
