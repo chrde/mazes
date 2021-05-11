@@ -188,13 +188,13 @@ impl Cell {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Neighbors {
-    inner: [Option<Neighbor1>; 4],
+    pub inner: [Option<Neighbor1>; 4],
 }
 
 impl Neighbors {
-    // pub fn iter(&self) -> impl Iterator<Item = usize> + '_ {
-    //     self.inner.iter().filter_map(|x| *x)
-    // }
+    pub fn iter(&self) -> impl Iterator<Item = Neighbor1> + '_ {
+        self.inner.iter().filter_map(|x| *x)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default)]

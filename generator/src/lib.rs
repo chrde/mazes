@@ -29,6 +29,7 @@ pub extern "C" fn init(_host_api: &mut dyn HostApi) -> *mut GameState {
         Generator::Sidewind => sidewinder::generate(&mut rng, maze_width, maze_height),
     };
     let debug = Debug {
+        debug_borders_color: [117, 140, 140],
         debug_autoplay: false,
         reload_requested: false,
         debug_step: steps.len() - 1,
@@ -184,7 +185,10 @@ pub extern "C" fn dbg_update(
                 state.debug.debug_step = state.generation.steps.len() - 1;
             }
         });
-        ui.checkbox(&mut state.debug.debug_show_distances, "show distances");
+        ui.horizontal(|ui| {
+            ui.color_edit_button_srgb(&mut state.debug.debug_borders_color);
+            ui.checkbox(&mut state.debug.debug_show_distances, "show distances");
+        });
         if ui.button("restart").clicked() {
             state.debug.reload_requested = true;
         }
@@ -192,7 +196,7 @@ pub extern "C" fn dbg_update(
     true
 }
 
-pub fn debug_reload_maze(state: &mut GameState, input: &Input) {
+pub fn debug_reload_maze(state: &mut GameState, _input: &Input) {
     if state.debug.reload_requested {
         state.maze_width = state.debug.debug_maze_width;
         state.maze_height = state.debug.debug_maze_height;
@@ -213,9 +217,11 @@ pub fn debug_reload_maze(state: &mut GameState, input: &Input) {
     }
     if state.debug.debug_autoplay {
         // if input.elapsed % 0.1 <= 0.1 {
-        state.debug.debug_step = (state.debug.debug_step + 1) % (state.generation.len() - 1);
-        if state.debug.debug_step == 0 {
+        state.debug.debug_step += 1;
+        if state.debug.debug_step == state.generation.len() - 1 {
             state.debug.debug_autoplay = false;
+        } else {
+            state.debug.debug_step = state.debug.debug_step % (state.generation.len() - 1);
         }
     }
     if state.debug.debug_step != state.generation.current_step {
@@ -272,7 +278,17 @@ pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi, inpu
                 if idx == (state.generation.current_step + 1) / 2 {
                     render_cell(host_api.render_group(), x, y, RED)
                 }
-                render_borders(host_api.render_group(), x, y, maze);
+                render_borders(
+                    host_api.render_group(),
+                    x,
+                    y,
+                    maze,
+                    Color {
+                        r: state.debug.debug_borders_color[0],
+                        g: state.debug.debug_borders_color[1],
+                        b: state.debug.debug_borders_color[2],
+                    },
+                );
             }
         }
     }
@@ -288,6 +304,7 @@ enum Generator {
 
 #[derive(Clone, Debug)]
 pub struct Debug {
+    debug_borders_color: [u8; 3],
     reload_requested: bool,
     debug_step: usize,
     debug_autoplay: bool,

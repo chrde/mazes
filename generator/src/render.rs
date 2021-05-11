@@ -7,12 +7,6 @@ pub const RED: Color = Color {
     b: 0,
 };
 
-pub const YELLOW: Color = Color {
-    r: 255,
-    g: 255,
-    b: 0,
-};
-
 pub fn render_cell(render_group: &mut RenderGroup, x: usize, y: usize, color: Color) {
     let command = RenderCommand::FillRectangle {
         x: x as f32 * TILE_WIDTH,
@@ -39,8 +33,13 @@ pub fn render_cell_text(render_group: &mut RenderGroup, x: f32, y: f32, text: St
     render_group.push(command);
 }
 
-
-pub fn render_borders(render_group: &mut RenderGroup, x: usize, y: usize, maze: &Maze) {
+pub fn render_borders(
+    render_group: &mut RenderGroup,
+    x: usize,
+    y: usize,
+    maze: &Maze,
+    color: Color,
+) {
     let idx = y * maze.width() + x;
     let links = maze.cells()[idx].links();
     let cell_x = x as f32 * TILE_WIDTH;
@@ -51,7 +50,7 @@ pub fn render_borders(render_group: &mut RenderGroup, x: usize, y: usize, maze: 
             y: cell_y,
             width: TILE_WIDTH,
             height: BORDER_HEIGHT,
-            color: YELLOW,
+            color,
         };
         render_group.push(command);
     }
@@ -61,7 +60,7 @@ pub fn render_borders(render_group: &mut RenderGroup, x: usize, y: usize, maze: 
             y: cell_y + TILE_HEIGHT - BORDER_HEIGHT,
             width: TILE_WIDTH,
             height: BORDER_HEIGHT,
-            color: YELLOW,
+            color,
         };
         render_group.push(command);
     }
@@ -71,7 +70,7 @@ pub fn render_borders(render_group: &mut RenderGroup, x: usize, y: usize, maze: 
             y: cell_y,
             width: BORDER_WIDTH,
             height: TILE_HEIGHT,
-            color: YELLOW,
+            color,
         };
         render_group.push(command);
     }
@@ -81,7 +80,7 @@ pub fn render_borders(render_group: &mut RenderGroup, x: usize, y: usize, maze: 
             y: cell_y,
             width: BORDER_WIDTH,
             height: TILE_HEIGHT,
-            color: YELLOW,
+            color,
         };
         render_group.push(command);
     }
