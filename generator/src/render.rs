@@ -1,6 +1,12 @@
 use crate::host_api::*;
 use crate::Maze;
 
+pub const DARK_RED: Color = Color {
+    r: 145,
+    g: 55,
+    b: 55,
+};
+
 pub const RED: Color = Color {
     r: 179,
     g: 45,
@@ -24,14 +30,14 @@ const BORDER_WIDTH: f32 = 3.0;
 const BORDER_HEIGHT: f32 = 3.0;
 
 // x and y start from table borders
-pub fn render_cell_text(render_group: &mut RenderGroup, x: f32, y: f32, text: String) {
-    let command = RenderCommand::Text {
-        x: x * BORDER_WIDTH,
-        y: y * BORDER_HEIGHT,
-        text,
-    };
-    render_group.push(command);
-}
+// pub fn render_cell_text(render_group: &mut RenderGroup, x: f32, y: f32, text: String) {
+//     let command = RenderCommand::Text {
+//         x: x * BORDER_WIDTH,
+//         y: y * BORDER_HEIGHT,
+//         text,
+//     };
+//     render_group.push(command);
+// }
 
 pub fn render_borders(
     render_group: &mut RenderGroup,

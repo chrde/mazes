@@ -1,3 +1,4 @@
+#[derive(Clone, Eq, PartialEq)]
 pub struct Maze {
     cells: Vec<Cell>,
     width: usize,
@@ -80,6 +81,21 @@ impl Maze {
         self.cells[neighbor.idx].unlink(n.opposite());
     }
 
+    pub fn from_a_to_b(&self, a: usize, b: usize) -> Option<Neighbor> {
+        let dir = if a + self.width == b {
+            Neighbor::South
+        } else if a + 1 == b {
+            Neighbor::East
+        } else if b + 1 == a {
+            Neighbor::West
+        } else if b + self.width == a {
+            Neighbor::North
+        } else {
+            return None;
+        };
+        Some(dir)
+    }
+
     pub fn link(&mut self, cell: usize, n: Neighbor) {
         let neighbor = self.neighbor_at(cell, n).unwrap();
         self.cells[cell].link(n);
@@ -106,6 +122,10 @@ impl Maze {
                 self.neighbor_at(cell, Neighbor::West),
             ],
         }
+    }
+
+    pub fn height(&self) -> usize {
+        self.cells.len() / self.width
     }
 
     pub fn width(&self) -> usize {
@@ -147,7 +167,7 @@ impl Neighbor {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Clone, Eq, PartialEq)]
 pub struct Cell {
     links: Links,
 }
@@ -196,7 +216,7 @@ impl Neighbors {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Links {
     pub north: bool,
     pub south: bool,

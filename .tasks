@@ -3,7 +3,7 @@ command=cargo test
 output=terminal
 
 [check]
-command=cargo check --all-features
+command=cargo check --all-features --workspace
 output=quickfix
 
 [bless]
