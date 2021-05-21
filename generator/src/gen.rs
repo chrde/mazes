@@ -1,5 +1,5 @@
+use crate::{common::Maze, Color, RenderGroup};
 use rand::prelude::StdRng;
-use crate::{Color, RenderGroup, common::Maze};
 
 pub trait MazeGenerator {
     fn render(&mut self, render_group: &mut RenderGroup, border_color: Color);

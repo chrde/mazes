@@ -27,9 +27,9 @@ use crate::host_api::*;
 #[no_mangle]
 pub extern "C" fn init(_host_api: &mut dyn HostApi) -> *mut GameState {
     // new game
-    let maze_width = 6;
-    let maze_height = 6;
-    let generator = Generator::Wilson;
+    let maze_width = 3;
+    let maze_height = 3;
+    let generator = Generator::Sidewind;
     let mut rng = StdRng::seed_from_u64(1234);
     let debug = Debug {
         debug_borders_color: [117, 140, 140],
@@ -44,7 +44,7 @@ pub extern "C" fn init(_host_api: &mut dyn HostApi) -> *mut GameState {
     let distances = vec![]; //dijkstra::flood(maze.middle_cell(), &maze);
     let path = vec![]; //dijkstra::longest_path(&maze);
     let game = GameState {
-        wilson: Box::new(WilsonGen::new(&mut rng, maze_width, maze_height)),
+        wilson: Box::new(SidewindGen::new(maze_width, maze_height)),
         rng,
         debug,
         maze_width,
@@ -182,9 +182,7 @@ pub fn debug_reload_maze(state: &mut GameState, _input: &Input) {
             Generator::BinaryTree => {
                 Box::new(BinaryTreeGen::new(state.maze_width, state.maze_height))
             }
-            Generator::Sidewind => {
-                Box::new(SidewindGen::new(state.maze_width, state.maze_height))
-            }
+            Generator::Sidewind => Box::new(SidewindGen::new(state.maze_width, state.maze_height)),
             Generator::Wilson => Box::new(WilsonGen::new(
                 &mut state.rng,
                 state.maze_width,

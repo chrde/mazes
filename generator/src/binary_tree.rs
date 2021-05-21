@@ -1,5 +1,7 @@
-use crate::{common::*, gen::MazeGenerator};
-use crate::{common::*, render::DARK_RED, render_borders, render_cell, Color, RenderGroup, RED};
+use crate::{
+    common::*, gen::MazeGenerator, render::DARK_RED, render_borders, render_cell, Color,
+    RenderGroup, RED,
+};
 use rand::prelude::StdRng;
 use rand::Rng;
 

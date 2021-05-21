@@ -1,60 +1,24 @@
 use crate::{common::*, gen::MazeGenerator};
 use crate::{common::*, render::DARK_RED, render_borders, render_cell, Color, RenderGroup, RED};
-use rand::prelude::StdRng;
+use rand::prelude::{SliceRandom, StdRng};
 use rand::Rng;
-
-// pub fn generate(rng: &mut StdRng, width: usize, height: usize) -> (Maze, Vec<Step>) {
-//     let mut maze = Maze::new(width, height);
-//     let mut current_group = 1usize;
-//     let mut steps = vec![];
-//     let mut last_direction = None;
-//     for cell in 0..maze.len() {
-//         let east = maze.neighbor_at(cell, Neighbor::East);
-//         let north = maze.neighbor_at(cell, Neighbor::North);
-//         let finish_group = match (east, north) {
-//             (Some(_), Some(_)) => rng.gen_range(0..2) == 0,
-//             (Some(_), None) => false,
-//             (None, Some(_)) => true,
-//             (None, None) => true,
-//         };
-//         if finish_group {
-//             if north.is_some() {
-//                 let rand = rng.gen_range(0..current_group);
-//                 maze.link(cell - rand, Neighbor::North);
-//                 steps.push(Step::Direction {
-//                     old: last_direction,
-//                     new: Neighbor::North,
-//                 });
-//                 steps.push(Step::Link(cell - rand, Neighbor::North));
-//                 last_direction = Some(Neighbor::North);
-//             }
-//             current_group = 1;
-//         } else {
-//             current_group += 1;
-//             let new = Neighbor::East;
-//             maze.link(cell, new);
-//             steps.push(Step::Direction {
-//                 old: last_direction,
-//                 new,
-//             });
-//             steps.push(Step::Link(cell, new));
-//             last_direction = Some(new);
-//         }
-//     }
-//     (maze, steps)
-// }
 
 #[derive(Copy, Clone, Debug)]
 enum Step {
     Empty,
     Direction(usize),
-    Link(usize, Neighbor1),
+    WalkEast(usize),
+    EraseWalk(usize),
+    RandWalk(usize),
+    LinkNorth(usize, usize),
     Finished,
 }
 
 pub struct SidewindGen {
     maze: Maze,
     next: usize,
+    current_walk: Vec<usize>,
+    truncated_walk: Vec<usize>,
     steps: Vec<Step>,
 }
 
@@ -63,6 +27,8 @@ impl SidewindGen {
         Self {
             maze: Maze::new(width, height),
             next: 0,
+            current_walk: vec![],
+            truncated_walk: vec![],
             steps: vec![Step::Empty],
         }
     }
@@ -96,25 +62,47 @@ impl MazeGenerator for SidewindGen {
         let next = match self.steps[self.next] {
             Step::Empty => Step::Direction(0),
             Step::Direction(cell) => {
-                let neighbors: Vec<_> = [Neighbor::North, Neighbor::East]
-                    .iter()
-                    .cloned()
-                    .filter_map(|n| self.maze.neighbor_at(cell, n))
-                    .collect();
-                if neighbors.is_empty() {
-                    Step::Direction(cell + 1)
-                } else {
-                    let choice = neighbors[rng.gen_range(0..neighbors.len())];
-                    Step::Link(cell, choice)
-                }
-            }
-            Step::Link(cell, next) => {
-                self.maze.link(cell, next.dir);
-                if cell == self.maze.len() - 1 {
+                if cell == self.maze.len() {
                     Step::Finished
                 } else {
-                    Step::Direction(cell + 1)
+                    let east = self.maze.neighbor_at(cell, Neighbor::East);
+                    let north = self.maze.neighbor_at(cell, Neighbor::North);
+                    let finish_walk = match (east, north) {
+                        (Some(_), Some(_)) => rng.gen_bool(0.5),
+                        (Some(_), None) => false,
+                        (None, Some(_)) => true,
+                        (None, None) => true,
+                    };
+                    if finish_walk {
+                        if north.is_some() {
+                            Step::RandWalk(cell)
+                        } else {
+                            Step::EraseWalk(cell)
+                        }
+                    } else {
+                        Step::WalkEast(cell)
+                    }
                 }
+            }
+            Step::WalkEast(cell) => {
+                self.current_walk.push(cell);
+                self.maze.link(cell, Neighbor::East);
+                Step::Direction(cell + 1)
+            }
+            Step::EraseWalk(cell) => {
+                let len = self.current_walk.len();
+                self.truncated_walk.append(&mut self.current_walk);
+                self.truncated_walk.push(len);
+                Step::Direction(cell + 1)
+            }
+            Step::RandWalk(cell) => {
+                self.current_walk.push(cell);
+                let linked = self.current_walk.choose(rng).unwrap();
+                Step::LinkNorth(cell, *linked)
+            }
+            Step::LinkNorth(cell, linked) => {
+                self.maze.link(linked, Neighbor::North);
+                Step::EraseWalk(cell)
             }
             Step::Finished => {
                 return;
@@ -140,7 +128,22 @@ impl MazeGenerator for SidewindGen {
         match self.steps[self.next] {
             Step::Empty => {}
             Step::Direction(_) => {}
-            Step::Link(cell, next) => self.maze.unlink(cell, next.dir),
+            Step::WalkEast(cell) => {
+                assert_eq!(cell, self.current_walk.pop().unwrap());
+                self.maze.unlink(cell, Neighbor::East);
+            }
+            Step::EraseWalk(cell) => {
+                let len = self.truncated_walk.pop().unwrap();
+                let offset = self.truncated_walk.len() - len;
+                let truncated = self.truncated_walk.drain(offset..);
+                self.current_walk.extend(truncated);
+            }
+            Step::RandWalk(cell) => {
+                assert_eq!(cell, self.current_walk.pop().unwrap());
+            }
+            Step::LinkNorth(cell, linked) => {
+                self.maze.unlink(linked, Neighbor::North);
+            }
             Step::Finished => {}
         }
     }
