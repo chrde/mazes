@@ -1,13 +1,11 @@
 use crate::game_host_api::GameHostApi;
-use crate::host_api::{HostApi, Input, RenderCommand};
 use crate::plugin::Plugin;
+use host_api::{HostApi, Input, RenderCommand};
 use macroquad::prelude::*;
 use macroquad::time;
 use std::sync::mpsc::Receiver;
 
 mod game_host_api;
-#[path = "../../src/host_api.rs"]
-mod host_api;
 mod plugin;
 
 pub const WIDTH: i32 = 1024;

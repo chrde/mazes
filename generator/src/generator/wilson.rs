@@ -1,11 +1,14 @@
+use super::MazeGenerator;
 use crate::{
-    common::*, gen::MazeGenerator, render::DARK_RED, render_borders, render_cell, Color,
-    RenderGroup, RED,
+    maze::Maze,
+    render::{DARK_RED, RED},
+    render_borders, render_cell,
 };
+use host_api::{Color, RenderGroup};
 use rand::prelude::{IteratorRandom, SliceRandom, StdRng};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum WilsonStep {
+enum Step {
     Empty,
     StartWalk,
     RandDir(usize),
@@ -18,14 +21,14 @@ pub enum WilsonStep {
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct WilsonGen {
-    pub maze: Maze,
-    pub unvisited: Vec<usize>,
-    pub visited: Vec<usize>,
-    pub links: Vec<Link>,
-    pub current_walk: Vec<usize>,
-    pub truncated_walk: Vec<usize>,
-    pub steps: Vec<WilsonStep>,
-    pub next: usize,
+    maze: Maze,
+    unvisited: Vec<usize>,
+    visited: Vec<usize>,
+    links: Vec<Link>,
+    current_walk: Vec<usize>,
+    truncated_walk: Vec<usize>,
+    steps: Vec<Step>,
+    next: usize,
 }
 
 impl WilsonGen {
@@ -34,7 +37,7 @@ impl WilsonGen {
         let mut unvisited: Vec<_> = (0..maze.len()).into_iter().collect();
         unvisited.shuffle(rng);
         let current_walk = vec![];
-        let steps = vec![WilsonStep::Empty];
+        let steps = vec![Step::Empty];
         Self {
             maze,
             next: 0,
@@ -46,77 +49,82 @@ impl WilsonGen {
             steps,
         }
     }
-}
 
-impl MazeGenerator for WilsonGen {
-    fn render(&mut self, render_group: &mut RenderGroup, border_color: Color) {
-        for idx in &self.visited {
-            let x = idx % self.maze.width();
-            let y = idx / self.maze.width();
-            render_cell(
+    fn render_cell(&self, cell: usize, render_group: &mut RenderGroup, color: Color) {
+        let x = cell % self.maze.width();
+        let y = cell / self.maze.width();
+        render_cell(render_group, x, y, color);
+    }
+
+    fn render_visited(&self, render_group: &mut RenderGroup) {
+        for cell in &self.visited {
+            self.render_cell(
+                *cell,
                 render_group,
-                x,
-                y,
                 Color {
                     r: 34,
                     g: 70,
                     b: 70,
                 },
-            );
+            )
         }
-        for idx in &self.unvisited {
-            let x = idx % self.maze.width();
-            let y = idx / self.maze.width();
-            render_cell(render_group, x, y, Color { r: 31, g: 0, b: 0 });
+    }
+
+    fn render_unvisited(&self, render_group: &mut RenderGroup) {
+        for cell in &self.unvisited {
+            self.render_cell(*cell, render_group, Color { r: 31, g: 0, b: 0 })
         }
-        for idx in &self.current_walk {
-            let x = idx % self.maze.width();
-            let y = idx / self.maze.width();
-            render_cell(
+    }
+
+    fn render_current_walk(&self, render_group: &mut RenderGroup) {
+        for cell in &self.current_walk {
+            self.render_cell(
+                *cell,
                 render_group,
-                x,
-                y,
                 Color {
                     r: 120,
                     g: 80,
                     b: 105,
                 },
-            );
+            )
         }
-        for y in 0..self.maze.height() {
-            for x in 0..self.maze.width() {
-                render_borders(render_group, x, y, &self.maze, border_color);
-            }
-        }
+    }
+}
+
+impl MazeGenerator for WilsonGen {
+    fn render(&mut self, render_group: &mut RenderGroup, border_color: Color) {
         match self.steps[self.next] {
-            WilsonStep::Empty => {}
-            WilsonStep::StartWalk => {}
-            WilsonStep::RandDir(cell) => {
-                let x = cell % self.maze.width();
-                let y = cell / self.maze.width();
-                render_cell(render_group, x, y, DARK_RED);
+            Step::Empty => {}
+            Step::StartWalk => {
+                self.render_visited(render_group);
+                self.render_unvisited(render_group);
             }
-            WilsonStep::Walk(cell, dir) => {
-                let x = cell % self.maze.width();
-                let y = cell / self.maze.width();
-                render_cell(render_group, x, y, DARK_RED);
-                let x = dir % self.maze.width();
-                let y = dir / self.maze.width();
-                render_cell(render_group, x, y, RED);
+            Step::RandDir(cell) => {
+                self.render_visited(render_group);
+                self.render_unvisited(render_group);
+                self.render_current_walk(render_group);
+                self.render_cell(cell, render_group, DARK_RED)
             }
-            WilsonStep::EraseWalk(cell) => {
+            Step::Walk(cell, dir) => {
+                self.render_visited(render_group);
+                self.render_unvisited(render_group);
+                self.render_current_walk(render_group);
+                self.render_cell(cell, render_group, DARK_RED);
+                self.render_cell(dir, render_group, RED);
+            }
+            Step::EraseWalk(cell) => {
+                self.render_visited(render_group);
+                self.render_unvisited(render_group);
+                self.render_current_walk(render_group);
                 let idx = self
                     .current_walk
                     .iter()
                     .position(|x| *x == cell)
                     .expect("cannot find cell in walk");
                 for idx in &self.current_walk[idx..] {
-                    let x = idx % self.maze.width();
-                    let y = idx / self.maze.width();
-                    render_cell(
+                    self.render_cell(
+                        *idx,
                         render_group,
-                        x,
-                        y,
                         Color {
                             r: 210,
                             g: 130,
@@ -125,14 +133,13 @@ impl MazeGenerator for WilsonGen {
                     );
                 }
             }
-            WilsonStep::FinishWalk(cell, next) => {
+            Step::FinishWalk(cell, _) => {
+                self.render_visited(render_group);
+                self.render_unvisited(render_group);
                 for idx in &self.current_walk {
-                    let x = idx % self.maze.width();
-                    let y = idx / self.maze.width();
-                    render_cell(
+                    self.render_cell(
+                        *idx,
                         render_group,
-                        x,
-                        y,
                         Color {
                             r: 34,
                             g: 110,
@@ -140,12 +147,9 @@ impl MazeGenerator for WilsonGen {
                         },
                     );
                 }
-                let x = cell % self.maze.width();
-                let y = cell / self.maze.width();
-                render_cell(
+                self.render_cell(
+                    cell,
                     render_group,
-                    x,
-                    y,
                     Color {
                         r: 34,
                         g: 110,
@@ -153,14 +157,13 @@ impl MazeGenerator for WilsonGen {
                     },
                 );
             }
-            WilsonStep::Link(cell, next) => {
+            Step::Link(cell, _) => {
+                self.render_visited(render_group);
+                self.render_unvisited(render_group);
                 for idx in &self.current_walk {
-                    let x = idx % self.maze.width();
-                    let y = idx / self.maze.width();
-                    render_cell(
+                    self.render_cell(
+                        *idx,
                         render_group,
-                        x,
-                        y,
                         Color {
                             r: 34,
                             g: 110,
@@ -168,12 +171,9 @@ impl MazeGenerator for WilsonGen {
                         },
                     );
                 }
-                let x = cell % self.maze.width();
-                let y = cell / self.maze.width();
-                render_cell(
+                self.render_cell(
+                    cell,
                     render_group,
-                    x,
-                    y,
                     Color {
                         r: 34,
                         g: 110,
@@ -181,7 +181,12 @@ impl MazeGenerator for WilsonGen {
                     },
                 );
             }
-            WilsonStep::Finished => {}
+            Step::Finished => {}
+        }
+        for y in 0..self.maze.height() {
+            for x in 0..self.maze.width() {
+                render_borders(render_group, x, y, &self.maze, border_color);
+            }
         }
     }
 
@@ -191,36 +196,36 @@ impl MazeGenerator for WilsonGen {
         }
 
         let next = match self.steps[self.next] {
-            WilsonStep::Empty => {
+            Step::Empty => {
                 let cell = self.unvisited.pop().expect("maze cant be empty");
                 self.visited.push(cell);
-                WilsonStep::StartWalk
+                Step::StartWalk
             }
-            WilsonStep::StartWalk => {
+            Step::StartWalk => {
                 let random = self
                     .unvisited
                     .last()
                     .cloned()
                     .expect("maze cant be empty (or len = 1)");
-                WilsonStep::RandDir(random)
+                Step::RandDir(random)
             }
-            WilsonStep::RandDir(cell) => {
+            Step::RandDir(cell) => {
                 let neighbors = self.maze.neighbors(cell);
                 let next = neighbors.iter().choose(rng).unwrap().idx;
-                WilsonStep::Walk(cell, next)
+                Step::Walk(cell, next)
             }
-            WilsonStep::Walk(cell, next) => {
+            Step::Walk(cell, next) => {
                 if self.current_walk.contains(&next) {
                     self.current_walk.push(cell);
-                    WilsonStep::EraseWalk(next)
+                    Step::EraseWalk(next)
                 } else if self.unvisited.contains(&next) {
                     self.current_walk.push(cell);
-                    WilsonStep::RandDir(next)
+                    Step::RandDir(next)
                 } else {
-                    WilsonStep::FinishWalk(cell, next)
+                    Step::FinishWalk(cell, next)
                 }
             }
-            WilsonStep::EraseWalk(cell) => {
+            Step::EraseWalk(cell) => {
                 let idx = self
                     .current_walk
                     .iter()
@@ -230,10 +235,10 @@ impl MazeGenerator for WilsonGen {
                 let len = truncated.len();
                 self.truncated_walk.extend(truncated);
                 self.truncated_walk.push(len);
-                WilsonStep::RandDir(cell)
+                Step::RandDir(cell)
             }
-            WilsonStep::FinishWalk(cell, next) => WilsonStep::Link(cell, next),
-            WilsonStep::Link(from, to) => {
+            Step::FinishWalk(cell, next) => Step::Link(cell, next),
+            Step::Link(from, to) => {
                 let unvisited_idx = self.unvisited.iter().position(|x| *x == from).unwrap();
                 let link = Link {
                     unvisited_idx,
@@ -247,15 +252,15 @@ impl MazeGenerator for WilsonGen {
                 self.links.push(link);
                 if self.current_walk.is_empty() {
                     if self.unvisited.is_empty() {
-                        WilsonStep::Finished
+                        Step::Finished
                     } else {
-                        WilsonStep::StartWalk
+                        Step::StartWalk
                     }
                 } else {
-                    WilsonStep::Link(self.current_walk.pop().unwrap(), from)
+                    Step::Link(self.current_walk.pop().unwrap(), from)
                 }
             }
-            WilsonStep::Finished => {
+            Step::Finished => {
                 return;
             }
         };
@@ -276,24 +281,24 @@ impl MazeGenerator for WilsonGen {
         self.next -= 1;
         println!("undoing {:?}", self.steps[self.next]);
         match self.steps[self.next] {
-            WilsonStep::Empty => {
+            Step::Empty => {
                 let last = self.visited.pop().unwrap();
                 self.unvisited.push(last);
             }
-            WilsonStep::StartWalk => {}
-            WilsonStep::RandDir(_) => {}
-            WilsonStep::Walk(cell, _) => {
+            Step::StartWalk => {}
+            Step::RandDir(_) => {}
+            Step::Walk(cell, _) => {
                 let last_walk = self.current_walk.pop().unwrap();
                 assert_eq!(last_walk, cell);
             }
-            WilsonStep::EraseWalk(_) => {
+            Step::EraseWalk(_) => {
                 let len = self.truncated_walk.pop().unwrap();
                 let offset = self.truncated_walk.len() - len;
                 let truncated = self.truncated_walk.drain(offset..);
                 self.current_walk.extend(truncated);
             }
-            WilsonStep::FinishWalk(_, _) => {}
-            WilsonStep::Link(_, _) => {
+            Step::FinishWalk(_, _) => {}
+            Step::Link(_, _) => {
                 let link = self.links.pop().unwrap();
                 let dir = self.maze.from_a_to_b(link.from, link.to).unwrap();
                 self.maze.unlink(link.from, dir);
@@ -303,12 +308,12 @@ impl MazeGenerator for WilsonGen {
                 self.unvisited.swap(last, link.unvisited_idx);
                 self.current_walk.push(link.from);
             }
-            WilsonStep::Finished => {}
+            Step::Finished => {}
         }
     }
 
     fn finished(&self) -> bool {
-        self.steps[self.next] == WilsonStep::Finished
+        self.steps[self.next] == Step::Finished
     }
 
     fn steps_count(&self) -> usize {
@@ -321,6 +326,12 @@ impl MazeGenerator for WilsonGen {
 
     fn next_step(&self) -> usize {
         self.next
+    }
+
+    fn completed(&self) -> bool {
+        self.steps
+            .last()
+            .map_or(false, |s| matches!(s, Step::Finished))
     }
 }
 

@@ -18,7 +18,7 @@ impl Maze {
     }
 
     pub fn middle_cell(&self) -> usize {
-        self.len() / 2 + self.width / 2
+        (self.height() / 2) * self.width + self.width / 2
     }
 
     pub fn cells(&self) -> &[Cell] {

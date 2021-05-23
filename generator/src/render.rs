@@ -1,5 +1,6 @@
-use crate::host_api::*;
-use crate::Maze;
+use host_api::{Color, RenderCommand, RenderGroup};
+
+use crate::maze::Maze;
 
 pub const DARK_RED: Color = Color {
     r: 145,

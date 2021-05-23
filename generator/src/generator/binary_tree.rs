@@ -1,6 +1,7 @@
+use super::MazeGenerator;
 use crate::{
-    common::*, gen::MazeGenerator, render::DARK_RED, render_borders, render_cell, Color,
-    RenderGroup, RED,
+    maze::{Maze, Neighbor, Neighbor1},
+    render_borders,
 };
 use rand::prelude::StdRng;
 use rand::Rng;
@@ -30,29 +31,6 @@ impl BinaryTreeGen {
 }
 
 impl MazeGenerator for BinaryTreeGen {
-    fn render(&mut self, render_group: &mut RenderGroup, border_color: Color) {
-        for y in 0..self.maze.height() {
-            for x in 0..self.maze.width() {
-                let idx = y * self.maze.width() + x;
-                // if state.debug.debug_show_distances {
-                //     render_cell(
-                //         host_api.render_group(),
-                //         x,
-                //         y,
-                //         Color::gradient_gray(state.distances[idx] as f64 / max_distance),
-                //     );
-                //     // let text = format!("d:{}", state.distances[idx]);
-                //     // render_cell_text(host_api.render_group(), 0.0, 0.0, text);
-                // }
-
-                // if idx == (state.generation.current_step + 1) / 2 {
-                //     render_cell(host_api.render_group(), x, y, RED)
-                // }
-                render_borders(render_group, x, y, &self.maze, border_color);
-            }
-        }
-    }
-
     fn next(&mut self, rng: &mut StdRng) {
         let next = match self.steps[self.next] {
             Step::Empty => Step::Direction(0),
@@ -120,5 +98,11 @@ impl MazeGenerator for BinaryTreeGen {
 
     fn maze(&self) -> &Maze {
         &self.maze
+    }
+
+    fn completed(&self) -> bool {
+        self.steps
+            .last()
+            .map_or(false, |s| matches!(s, Step::Finished))
     }
 }

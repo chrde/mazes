@@ -1,5 +1,8 @@
-use crate::{common::*, gen::MazeGenerator};
-use crate::{common::*, render::DARK_RED, render_borders, render_cell, Color, RenderGroup, RED};
+use super::MazeGenerator;
+use crate::{
+    maze::{Maze, Neighbor},
+    render_borders,
+};
 use rand::prelude::{SliceRandom, StdRng};
 use rand::Rng;
 
@@ -14,7 +17,7 @@ enum Step {
     Finished,
 }
 
-pub struct SidewindGen {
+pub struct SidewinderGen {
     maze: Maze,
     next: usize,
     current_walk: Vec<usize>,
@@ -22,7 +25,7 @@ pub struct SidewindGen {
     steps: Vec<Step>,
 }
 
-impl SidewindGen {
+impl SidewinderGen {
     pub fn new(width: usize, height: usize) -> Self {
         Self {
             maze: Maze::new(width, height),
@@ -34,30 +37,7 @@ impl SidewindGen {
     }
 }
 
-impl MazeGenerator for SidewindGen {
-    fn render(&mut self, render_group: &mut RenderGroup, border_color: Color) {
-        for y in 0..self.maze.height() {
-            for x in 0..self.maze.width() {
-                let idx = y * self.maze.width() + x;
-                // if state.debug.debug_show_distances {
-                //     render_cell(
-                //         host_api.render_group(),
-                //         x,
-                //         y,
-                //         Color::gradient_gray(state.distances[idx] as f64 / max_distance),
-                //     );
-                //     // let text = format!("d:{}", state.distances[idx]);
-                //     // render_cell_text(host_api.render_group(), 0.0, 0.0, text);
-                // }
-
-                // if idx == (state.generation.current_step + 1) / 2 {
-                //     render_cell(host_api.render_group(), x, y, RED)
-                // }
-                render_borders(render_group, x, y, &self.maze, border_color);
-            }
-        }
-    }
-
+impl MazeGenerator for SidewinderGen {
     fn next(&mut self, rng: &mut StdRng) {
         let next = match self.steps[self.next] {
             Step::Empty => Step::Direction(0),
@@ -132,7 +112,7 @@ impl MazeGenerator for SidewindGen {
                 assert_eq!(cell, self.current_walk.pop().unwrap());
                 self.maze.unlink(cell, Neighbor::East);
             }
-            Step::EraseWalk(cell) => {
+            Step::EraseWalk(_) => {
                 let len = self.truncated_walk.pop().unwrap();
                 let offset = self.truncated_walk.len() - len;
                 let truncated = self.truncated_walk.drain(offset..);
@@ -141,7 +121,7 @@ impl MazeGenerator for SidewindGen {
             Step::RandWalk(cell) => {
                 assert_eq!(cell, self.current_walk.pop().unwrap());
             }
-            Step::LinkNorth(cell, linked) => {
+            Step::LinkNorth(_, linked) => {
                 self.maze.unlink(linked, Neighbor::North);
             }
             Step::Finished => {}
@@ -162,5 +142,11 @@ impl MazeGenerator for SidewindGen {
 
     fn maze(&self) -> &Maze {
         &self.maze
+    }
+
+    fn completed(&self) -> bool {
+        self.steps
+            .last()
+            .map_or(false, |s| matches!(s, Step::Finished))
     }
 }

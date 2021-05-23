@@ -1,5 +1,5 @@
-use crate::host_api::*;
 use egui::CtxRef;
+use host_api::{HostApi, Input};
 use libloading as lib;
 
 pub struct Plugin {

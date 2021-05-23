@@ -1,4 +1,4 @@
-use crate::common::*;
+use crate::maze::Maze;
 
 const MAX_DISTANCE: usize = 9999;
 
