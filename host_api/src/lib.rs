@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 pub trait HostApi {
     fn hello(&self) -> &str {
         "hello world"

@@ -1,14 +1,9 @@
 [package]
-name = "generator"
+name = "host_api"
 version = "0.1.0"
 authors = ["Christian De la Hoz <christian.hoz@anixe.pl>"]
 edition = "2018"
 
-[lib]
-crate-type = ["cdylib"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-egui = "0.11.0"
-rand = "0.8.3"
-
-host_api = { path = "../host_api" }

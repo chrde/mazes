@@ -391,6 +391,7 @@ dependencies = [
  "egui",
  "egui-macroquad",
  "gl",
+ "host_api",
  "libloading 0.7.0",
  "macroquad",
  "rand",
@@ -477,6 +478,7 @@ name = "generator"
 version = "0.1.0"
 dependencies = [
  "egui",
+ "host_api",
  "rand",
 ]
 
@@ -532,6 +534,10 @@ dependencies = [
  "ahash 0.3.8",
  "autocfg",
 ]
+
+[[package]]
+name = "host_api"
+version = "0.1.0"
 
 [[package]]
 name = "hound"
