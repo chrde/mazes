@@ -1,7 +1,5 @@
 use crate::maze::Maze;
 
-const MAX_DISTANCE: usize = 9999;
-
 pub fn shortest_path(from: usize, to: usize, maze: &Maze, distances: &[usize]) -> Vec<usize> {
     let mut breadcrumbs = vec![to];
     let mut current = to;
@@ -37,13 +35,13 @@ pub fn longest_path(maze: &Maze) -> Vec<usize> {
 }
 
 pub fn flood(from: usize, maze: &Maze) -> Vec<usize> {
-    assert!(maze.cells().len() < 9999);
-    let mut distances = vec![MAX_DISTANCE; maze.cells().len()];
+    let max_distance = maze.cells().len();
+    let mut distances = vec![max_distance; maze.cells().len()];
     let mut pending = vec![(from, 1)];
     distances[from] = 0;
     while let Some((current, distance)) = pending.pop() {
         for neighbor in maze.linked_neighbors(current).iter() {
-            if distances[neighbor.idx] == MAX_DISTANCE || distances[neighbor.idx] > distance {
+            if distances[neighbor.idx] == max_distance || distances[neighbor.idx] > distance {
                 distances[neighbor.idx] = distance;
                 pending.push((neighbor.idx, distance + 1));
             }

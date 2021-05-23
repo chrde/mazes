@@ -1,5 +1,5 @@
 use crate::generator::*;
-use crate::GameState;
+use crate::{GameState, Overlay};
 use egui::{Button, CtxRef, ScrollArea, Slider};
 use host_api::{HostApi, Input};
 use std::cmp;
@@ -82,7 +82,13 @@ pub extern "C" fn dbg_update(
         ui.horizontal(|ui| {
             ui.color_edit_button_srgb(&mut state.debug.debug_borders_color);
             if state.wilson.completed() {
-                ui.checkbox(&mut state.debug.debug_show_distances, "show distances");
+                ui.radio_value(&mut state.overlay, None, "none");
+                ui.radio_value(&mut state.overlay, Some(Overlay::Distances), "distances");
+                ui.radio_value(
+                    &mut state.overlay,
+                    Some(Overlay::LongestPath),
+                    "longest path",
+                );
             }
         });
         ui.label(format!(
@@ -124,7 +130,8 @@ pub extern "C" fn dbg_update(
 pub fn debug_reload_maze(state: &mut GameState, _input: &Input) {
     if state.debug.reload_requested {
         state.distances.clear();
-        state.debug.debug_show_distances = false;
+        state.longest_path.clear();
+        state.overlay = None;
         state.maze_width = state.debug.debug_maze_width;
         state.maze_height = state.debug.debug_maze_height;
         state.debug.reload_requested = false;

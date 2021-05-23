@@ -1,8 +1,5 @@
 use super::MazeGenerator;
-use crate::{
-    maze::{Maze, Neighbor, Neighbor1},
-    render_borders,
-};
+use crate::maze::{Maze, Neighbor, Neighbor1};
 use rand::prelude::StdRng;
 use rand::Rng;
 
