@@ -224,6 +224,23 @@ pub struct Links {
     pub west: bool,
 }
 
+impl Links {
+    /// returns true if it has at least 1 link
+    pub fn is_partial(&self) -> bool {
+        !self.is_empty() && !self.is_completed()
+    }
+
+    /// returns true if it has all the links
+    pub fn is_completed(&self) -> bool {
+        self.north && self.south && self.east && self.west
+    }
+
+    /// returns true if it has no links
+    pub fn is_empty(&self) -> bool {
+        !self.north && !self.south && !self.east && !self.west
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

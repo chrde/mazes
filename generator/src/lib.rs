@@ -18,12 +18,13 @@ pub extern "C" fn init(_host_api: &mut dyn HostApi) -> *mut GameState {
     // new game
     let maze_width = 15;
     let maze_height = 15;
-    let generator = Generator::Sidewind;
+    let generator = Generator::HuntAndKill;
     let rng = StdRng::seed_from_u64(1234);
     let debug = Debug {
         debug_borders_color: [117, 140, 140],
         debug_autoplay: false,
         reload_requested: false,
+        finish_requested: false,
         debug_step: 0,
         debug_maze_width: maze_width,
         debug_maze_height: maze_height,
@@ -31,7 +32,7 @@ pub extern "C" fn init(_host_api: &mut dyn HostApi) -> *mut GameState {
     let distances = vec![];
     let longest_path = vec![];
     let game = GameState {
-        wilson: Box::new(SidewinderGen::new(maze_width, maze_height)),
+        wilson: Box::new(HuntAndKillGen::new(maze_width, maze_height)),
         rng,
         debug,
         maze_width,
@@ -52,7 +53,6 @@ pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi, inpu
     debug_reload_maze(state, input);
     if state.wilson.completed() && state.distances.is_empty() {
         state.distances = dijkstra::flood(state.wilson.maze().middle_cell(), &state.wilson.maze());
-        dbg!(&state.distances);
     }
     if state.wilson.completed() && state.longest_path.is_empty() {
         state.longest_path = dijkstra::longest_path(state.wilson.maze());
@@ -124,6 +124,7 @@ pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi, inpu
 #[derive(Clone, Debug)]
 pub struct Debug {
     debug_borders_color: [u8; 3],
+    finish_requested: bool,
     reload_requested: bool,
     debug_step: usize,
     debug_autoplay: bool,

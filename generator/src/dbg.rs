@@ -15,6 +15,7 @@ pub extern "C" fn dbg_update(
             ui.radio_value(&mut state.generator, Generator::Sidewind, "Sidewind");
             ui.radio_value(&mut state.generator, Generator::BinaryTree, "Binary tree");
             ui.radio_value(&mut state.generator, Generator::Wilson, "Wilson");
+            ui.radio_value(&mut state.generator, Generator::HuntAndKill, "Hunt & kill");
         });
         ui.horizontal(|ui| {
             ui.label("Width:");
@@ -70,12 +71,13 @@ pub extern "C" fn dbg_update(
             let last =
                 Button::new("⏭").enabled(state.debug.debug_step != state.wilson.steps_count() - 1);
             if ui.add(last).clicked() {
-                state.debug.debug_step = state.wilson.steps_count() - 1;
+                state.debug.finish_requested = true;
+                // state.debug.debug_step = state.wilson.steps_count() - 1;
             }
             if !state.wilson.completed() {
                 if ui.add(Button::new("finish")).clicked() {
-                    state.wilson.finish(&mut state.rng);
-                    state.debug.debug_step = state.wilson.steps_count() - 1;
+                    state.debug.finish_requested = true;
+                    // state.debug.debug_step = state.wilson.steps_count() - 1;
                 }
             }
         });
@@ -120,9 +122,15 @@ pub extern "C" fn dbg_update(
         //     }
         // });
         // ui.separator();
-        if ui.button("restart").clicked() {
-            state.debug.reload_requested = true;
-        }
+        ui.horizontal(|ui| {
+            if ui.button("restart").clicked() {
+                state.debug.reload_requested = true;
+            }
+            if ui.button("restart & finish").clicked() {
+                state.debug.reload_requested = true;
+                state.debug.finish_requested = true;
+            }
+        });
     });
     true
 }
@@ -147,8 +155,16 @@ pub fn debug_reload_maze(state: &mut GameState, _input: &Input) {
                 state.maze_width,
                 state.maze_height,
             )),
+            Generator::HuntAndKill => {
+                Box::new(HuntAndKillGen::new(state.maze_width, state.maze_height))
+            }
         };
         state.debug.debug_step = cmp::min(state.debug.debug_step, state.wilson.steps_count() - 1);
+    }
+    if state.debug.finish_requested {
+        state.wilson.finish(&mut state.rng);
+        state.debug.debug_step = state.wilson.steps_count() - 1;
+        state.debug.finish_requested = false;
     }
     if state.debug.debug_autoplay {
         state.debug.debug_step = (state.debug.debug_step % state.wilson.steps_count()) + 1;

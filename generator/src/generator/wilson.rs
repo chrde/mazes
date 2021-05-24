@@ -313,7 +313,7 @@ impl MazeGenerator for WilsonGen {
     }
 
     fn finished(&self) -> bool {
-        self.steps[self.next] == Step::Finished
+        matches!(self.steps[self.next], Step::Finished)
     }
 
     fn steps_count(&self) -> usize {

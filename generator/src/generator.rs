@@ -3,10 +3,12 @@ use host_api::{Color, RenderGroup};
 use rand::prelude::StdRng;
 
 mod binary_tree;
+mod hunt_and_kill;
 mod sidewinder;
 mod wilson;
 
 pub use self::binary_tree::BinaryTreeGen;
+pub use self::hunt_and_kill::HuntAndKillGen;
 pub use self::sidewinder::SidewinderGen;
 pub use self::wilson::WilsonGen;
 
@@ -55,4 +57,5 @@ pub enum Generator {
     BinaryTree,
     Sidewind,
     Wilson,
+    HuntAndKill,
 }
