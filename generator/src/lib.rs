@@ -31,8 +31,9 @@ pub extern "C" fn init(_host_api: &mut dyn HostApi) -> *mut GameState {
     };
     let distances = vec![];
     let longest_path = vec![];
+
     let game = GameState {
-        wilson: Box::new(HuntAndKillGen::new(maze_width, maze_height)),
+        wilson: MazeGen::HuntAndKill(Box::new(HuntAndKillGen::new(maze_width, maze_height))),
         rng,
         debug,
         maze_width,
@@ -51,11 +52,12 @@ pub extern "C" fn init(_host_api: &mut dyn HostApi) -> *mut GameState {
 #[no_mangle]
 pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi, input: &Input) -> bool {
     debug_reload_maze(state, input);
-    if state.wilson.completed() && state.distances.is_empty() {
-        state.distances = dijkstra::flood(state.wilson.maze().middle_cell(), &state.wilson.maze());
+    let wilson = state.wilson.maze_mut();
+    if wilson.completed() && state.distances.is_empty() {
+        state.distances = dijkstra::flood(wilson.maze().middle_cell(), &wilson.maze());
     }
-    if state.wilson.completed() && state.longest_path.is_empty() {
-        state.longest_path = dijkstra::longest_path(state.wilson.maze());
+    if wilson.completed() && state.longest_path.is_empty() {
+        state.longest_path = dijkstra::longest_path(wilson.maze());
     }
     if input.mouse_wheel_up {
         state.camera_zoom /= 1.1;
@@ -86,7 +88,7 @@ pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi, inpu
         b: state.debug.debug_borders_color[2],
     };
 
-    let maze = state.wilson.maze();
+    let maze = wilson.maze();
     match state.overlay {
         Some(Overlay::Distances) => {
             let max_distance = state.distances.iter().max().cloned().unwrap() as f64;
@@ -116,7 +118,8 @@ pub extern "C" fn update(state: &mut GameState, host_api: &mut dyn HostApi, inpu
         }
         None => {}
     }
-    state.wilson.render(host_api.render_group(), border_color);
+    wilson.render(host_api.render_group(), border_color);
+
     let needs_update = true;
     needs_update
 }
@@ -134,7 +137,6 @@ pub struct Debug {
 
 #[repr(C)]
 pub struct GameState {
-    wilson: Box<dyn MazeGenerator>,
     debug: Debug,
     maze_width: usize,
     maze_height: usize,
@@ -146,6 +148,7 @@ pub struct GameState {
     camera_zoom: f32,
     camera_x: f32,
     camera_y: f32,
+    wilson: MazeGen,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

@@ -59,3 +59,31 @@ pub enum Generator {
     Wilson,
     HuntAndKill,
 }
+
+pub enum MazeGen {
+    BinaryTree(Box<BinaryTreeGen>),
+    Sidewind(Box<SidewinderGen>),
+    Wilson(Box<WilsonGen>),
+    HuntAndKill(Box<HuntAndKillGen>),
+}
+
+// NOTE(chrde): this is a workaround since we cant have trait objects in our state - live reload doesnt work
+impl MazeGen {
+    pub fn maze(&self) -> &dyn MazeGenerator {
+        match self {
+            MazeGen::BinaryTree(g) => g.as_ref() as &dyn MazeGenerator,
+            MazeGen::Sidewind(g) => g.as_ref() as &dyn MazeGenerator,
+            MazeGen::Wilson(g) => g.as_ref() as &dyn MazeGenerator,
+            MazeGen::HuntAndKill(g) => g.as_ref() as &dyn MazeGenerator,
+        }
+    }
+
+    pub fn maze_mut(&mut self) -> &mut dyn MazeGenerator {
+        match self {
+            MazeGen::BinaryTree(g) => g.as_mut() as &mut dyn MazeGenerator,
+            MazeGen::Sidewind(g) => g.as_mut() as &mut dyn MazeGenerator,
+            MazeGen::Wilson(g) => g.as_mut() as &mut dyn MazeGenerator,
+            MazeGen::HuntAndKill(g) => g.as_mut() as &mut dyn MazeGenerator,
+        }
+    }
+}

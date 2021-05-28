@@ -1,6 +1,6 @@
 use crate::generator::*;
 use crate::{GameState, Overlay};
-use egui::{Button, CtxRef, ScrollArea, Slider};
+use egui::{Button, CtxRef, Slider};
 use host_api::{HostApi, Input};
 use std::cmp;
 
@@ -10,6 +10,12 @@ pub extern "C" fn dbg_update(
     _host_api: &mut dyn HostApi,
     egui_ctx: &CtxRef,
 ) -> bool {
+    let wilson = state.wilson.maze();
+    let finished = wilson.finished();
+    let steps = wilson.steps_count() - 1;
+    let completed = wilson.completed();
+    let next_step = wilson.next_step();
+
     egui::Window::new("debug").show(egui_ctx, |ui| {
         ui.horizontal(|ui| {
             ui.radio_value(&mut state.generator, Generator::Sidewind, "Sidewind");
@@ -33,11 +39,7 @@ pub extern "C" fn dbg_update(
         });
         ui.horizontal(|ui| {
             ui.label("Steps:");
-            let slider = Slider::new(
-                &mut state.debug.debug_step,
-                0..=state.wilson.steps_count() - 1,
-            )
-            .clamp_to_range(true);
+            let slider = Slider::new(&mut state.debug.debug_step, 0..=steps).clamp_to_range(true);
             ui.add(slider);
             let first = Button::new("⏮").enabled(state.debug.debug_step != 0);
             if ui.add(first).clicked() {
@@ -48,8 +50,7 @@ pub extern "C" fn dbg_update(
                 state.debug.debug_step -= 1;
             }
 
-            let no_more =
-                state.wilson.finished() && state.debug.debug_step == state.wilson.steps_count() - 1;
+            let no_more = finished && state.debug.debug_step == steps;
             if no_more {
                 state.debug.debug_autoplay = false;
                 ui.add(Button::new("⏵").enabled(state.debug.debug_autoplay));
@@ -68,22 +69,19 @@ pub extern "C" fn dbg_update(
             if ui.add(next).clicked() {
                 state.debug.debug_step += 1;
             }
-            let last =
-                Button::new("⏭").enabled(state.debug.debug_step != state.wilson.steps_count() - 1);
+            let last = Button::new("⏭").enabled(state.debug.debug_step != steps);
             if ui.add(last).clicked() {
                 state.debug.finish_requested = true;
-                // state.debug.debug_step = state.wilson.steps_count() - 1;
             }
-            if !state.wilson.completed() {
+            if !completed {
                 if ui.add(Button::new("finish")).clicked() {
                     state.debug.finish_requested = true;
-                    // state.debug.debug_step = state.wilson.steps_count() - 1;
                 }
             }
         });
         ui.horizontal(|ui| {
             ui.color_edit_button_srgb(&mut state.debug.debug_borders_color);
-            if state.wilson.completed() {
+            if completed {
                 ui.radio_value(&mut state.overlay, None, "none");
                 ui.radio_value(&mut state.overlay, Some(Overlay::Distances), "distances");
                 ui.radio_value(
@@ -95,8 +93,7 @@ pub extern "C" fn dbg_update(
         });
         ui.label(format!(
             "step(wilson {}, debug {})",
-            state.wilson.next_step(),
-            state.debug.debug_step
+            next_step, state.debug.debug_step
         ));
         // ui.separator();
         // ui.label(format!("visited: {:?}", state.wilson.visited));
@@ -107,7 +104,7 @@ pub extern "C" fn dbg_update(
         // let mut area = ScrollArea::from_max_height(150.0);
         // area.show(ui, |ui| {
         //     let half = 3;
-        //     let current = state.wilson.next_step();
+        //     let current = state.next_step;
         //     let first = current.saturating_sub(half);
         //     for x in first..current {
         //         ui.label(format!("{}: {:?}", x, state.wilson.steps[x]));
@@ -143,36 +140,41 @@ pub fn debug_reload_maze(state: &mut GameState, _input: &Input) {
         state.maze_width = state.debug.debug_maze_width;
         state.maze_height = state.debug.debug_maze_height;
         state.debug.reload_requested = false;
-        state.wilson = match state.generator {
-            Generator::BinaryTree => {
-                Box::new(BinaryTreeGen::new(state.maze_width, state.maze_height))
-            }
-            Generator::Sidewind => {
-                Box::new(SidewinderGen::new(state.maze_width, state.maze_height))
-            }
-            Generator::Wilson => Box::new(WilsonGen::new(
+        let new_wilson = match state.generator {
+            Generator::BinaryTree => MazeGen::BinaryTree(Box::new(BinaryTreeGen::new(
+                state.maze_width,
+                state.maze_height,
+            ))),
+            Generator::Sidewind => MazeGen::Sidewind(Box::new(SidewinderGen::new(
+                state.maze_width,
+                state.maze_height,
+            ))),
+            Generator::Wilson => MazeGen::Wilson(Box::new(WilsonGen::new(
                 &mut state.rng,
                 state.maze_width,
                 state.maze_height,
-            )),
-            Generator::HuntAndKill => {
-                Box::new(HuntAndKillGen::new(state.maze_width, state.maze_height))
-            }
+            ))),
+            Generator::HuntAndKill => MazeGen::HuntAndKill(Box::new(HuntAndKillGen::new(
+                state.maze_width,
+                state.maze_height,
+            ))),
         };
-        state.debug.debug_step = cmp::min(state.debug.debug_step, state.wilson.steps_count() - 1);
+        state.debug.debug_step =
+            cmp::min(state.debug.debug_step, new_wilson.maze().steps_count() - 1);
+        state.wilson = new_wilson;
     }
+
+    let wilson = state.wilson.maze_mut();
     if state.debug.finish_requested {
-        state.wilson.finish(&mut state.rng);
-        state.debug.debug_step = state.wilson.steps_count() - 1;
+        wilson.finish(&mut state.rng);
+        state.debug.debug_step = wilson.steps_count() - 1;
         state.debug.finish_requested = false;
     }
     if state.debug.debug_autoplay {
-        state.debug.debug_step = (state.debug.debug_step % state.wilson.steps_count()) + 1;
+        state.debug.debug_step = (state.debug.debug_step % wilson.steps_count()) + 1;
     }
-    if state.debug.debug_step != state.wilson.next_step() {
-        state
-            .wilson
-            .goto_step(&mut state.rng, state.debug.debug_step);
-        state.debug.debug_step = state.wilson.next_step();
+    if state.debug.debug_step != wilson.next_step() {
+        wilson.goto_step(&mut state.rng, state.debug.debug_step);
+        state.debug.debug_step = wilson.next_step();
     }
 }
