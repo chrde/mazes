@@ -18,21 +18,35 @@ pub extern "C" fn dbg_update(
 
     egui::Window::new("debug").show(egui_ctx, |ui| {
         ui.horizontal(|ui| {
-            ui.radio_value(&mut state.generator, Generator::Sidewind, "Sidewind");
-            ui.radio_value(&mut state.generator, Generator::BinaryTree, "Binary tree");
-            ui.radio_value(&mut state.generator, Generator::Wilson, "Wilson");
-            ui.radio_value(&mut state.generator, Generator::HuntAndKill, "Hunt & kill");
+            ui.label("Generator:");
+            egui::ComboBox::from_id_source("generator")
+                .selected_text(format!("{:?}", state.generator))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut state.generator, Generator::Sidewind, "Sidewind");
+                    ui.selectable_value(&mut state.generator, Generator::BinaryTree, "Binary tree");
+                    ui.selectable_value(&mut state.generator, Generator::Wilson, "Wilson");
+                    ui.selectable_value(
+                        &mut state.generator,
+                        Generator::HuntAndKill,
+                        "Hunt & kill",
+                    );
+                    ui.selectable_value(
+                        &mut state.generator,
+                        Generator::RecurBacktracker,
+                        "Recur. Backtracker",
+                    );
+                });
         });
         ui.horizontal(|ui| {
             ui.label("Width:");
             ui.add(
-                Slider::new(&mut state.debug.debug_maze_width, 1..=90)
+                Slider::new(&mut state.debug.debug_maze_width, 1..=900)
                     .clamp_to_range(true)
                     .integer(),
             );
             ui.label("Height: ");
             ui.add(
-                Slider::new(&mut state.debug.debug_maze_height, 1..=90)
+                Slider::new(&mut state.debug.debug_maze_height, 1..=900)
                     .clamp_to_range(true)
                     .integer(),
             );
@@ -158,6 +172,9 @@ pub fn debug_reload_maze(state: &mut GameState, _input: &Input) {
                 state.maze_width,
                 state.maze_height,
             ))),
+            Generator::RecurBacktracker => MazeGen::RecurBacktracker(Box::new(
+                RecurBacktrackerGen::new(state.maze_width, state.maze_height),
+            )),
         };
         state.debug.debug_step =
             cmp::min(state.debug.debug_step, new_wilson.maze().steps_count() - 1);

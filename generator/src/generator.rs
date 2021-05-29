@@ -4,11 +4,13 @@ use rand::prelude::StdRng;
 
 mod binary_tree;
 mod hunt_and_kill;
+mod recur_backtracker;
 mod sidewinder;
 mod wilson;
 
 pub use self::binary_tree::BinaryTreeGen;
 pub use self::hunt_and_kill::HuntAndKillGen;
+pub use self::recur_backtracker::RecurBacktrackerGen;
 pub use self::sidewinder::SidewinderGen;
 pub use self::wilson::WilsonGen;
 
@@ -52,12 +54,13 @@ pub trait MazeGenerator {
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Generator {
     BinaryTree,
     Sidewind,
     Wilson,
     HuntAndKill,
+    RecurBacktracker,
 }
 
 pub enum MazeGen {
@@ -65,6 +68,7 @@ pub enum MazeGen {
     Sidewind(Box<SidewinderGen>),
     Wilson(Box<WilsonGen>),
     HuntAndKill(Box<HuntAndKillGen>),
+    RecurBacktracker(Box<RecurBacktrackerGen>),
 }
 
 // NOTE(chrde): this is a workaround since we cant have trait objects in our state - live reload doesnt work
@@ -75,6 +79,7 @@ impl MazeGen {
             MazeGen::Sidewind(g) => g.as_ref() as &dyn MazeGenerator,
             MazeGen::Wilson(g) => g.as_ref() as &dyn MazeGenerator,
             MazeGen::HuntAndKill(g) => g.as_ref() as &dyn MazeGenerator,
+            MazeGen::RecurBacktracker(g) => g.as_ref() as &dyn MazeGenerator,
         }
     }
 
@@ -84,6 +89,7 @@ impl MazeGen {
             MazeGen::Sidewind(g) => g.as_mut() as &mut dyn MazeGenerator,
             MazeGen::Wilson(g) => g.as_mut() as &mut dyn MazeGenerator,
             MazeGen::HuntAndKill(g) => g.as_mut() as &mut dyn MazeGenerator,
+            MazeGen::RecurBacktracker(g) => g.as_mut() as &mut dyn MazeGenerator,
         }
     }
 }

@@ -27,7 +27,10 @@ pub fn run() -> Result<(Receiver<()>, RecommendedWatcher), Box<dyn std::error::E
                         }
                     }
                 }
-                Err(e) => println!("watch error: {:?}", e),
+                Err(e) => {
+                    println!("watch error: {:?}", e);
+                    return;
+                }
             }
         }
     });
